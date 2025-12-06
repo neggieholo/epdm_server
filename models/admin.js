@@ -91,7 +91,7 @@ module.exports.Partners = mongoose.model('Partners', partnersSchema);
 const SectionSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ["paragraph", "image", "video"],
+    enum: ["paragraph", "image", "video", "pdf"],
     required: true,
   },
   content: {
@@ -127,6 +127,46 @@ const projectInterviewSchema = new mongoose.Schema(
 );
 
 module.exports.ProjectInterview = mongoose.model('ProjectInterview', projectInterviewSchema);
+
+const localContentSchema = new mongoose.Schema(
+  {
+    heading: { type: String, required: true },
+    sections: [SectionSchema], // order preserved
+  },
+  { timestamps: true }
+);
+
+module.exports.LocalContent = mongoose.model('LocalContent', localContentSchema);
+
+const industryAwardsSchema = new mongoose.Schema(
+  {
+    heading: { type: String, required: true },
+    sections: [SectionSchema], // order preserved
+  },
+  { timestamps: true }
+);
+
+module.exports.IndustryAward = mongoose.model('IndustryAward', industryAwardsSchema);
+
+const industryReportsSchema = new mongoose.Schema(
+  {
+    heading: { type: String, required: true },
+    sections: [SectionSchema], // order preserved
+  },
+  { timestamps: true }
+);
+
+module.exports.IndustryReport = mongoose.model('IndustryReport', industryReportsSchema);
+
+const industryChallengeSchema = new mongoose.Schema(
+  {
+    heading: { type: String, required: true },
+    sections: [SectionSchema], // order preserved
+  },
+  { timestamps: true }
+);
+
+module.exports.IndustryChallenge = mongoose.model('IndustryChallenge', industryChallengeSchema);
 
 // ======================
 // Social Links

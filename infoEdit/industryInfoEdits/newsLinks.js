@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { NewsLink } = require('../models/admin');
+const { NewsLink } = require('../../models/admin');
 
 // ✅ Create one or multiple links
 router.post("/save", async (req, res) => {

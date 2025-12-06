@@ -23,8 +23,12 @@ const aboutUs_servicesRoute = require("./infoEdit/aboutUs_services");
 const teamEditRoute = require("./infoEdit/team");
 const partnersEditRoute = require("./infoEdit/partners");
 const newsEditRoute = require("./infoEdit/news");
-const projectInterviewRoute = require("./infoEdit/projectInterview");
-const newsLinkRoute = require("./infoEdit/newsLinks");
+const projectInterviewRoute = require("./infoEdit/industryInfoEdits/projectInterview");
+const newsLinkRoute = require("./infoEdit/industryInfoEdits/newsLinks");
+const localContentRoute = require("./infoEdit/industryInfoEdits/localContent");
+const industryAwardRoute = require("./infoEdit/industryInfoEdits/awards");
+const industryReportRoute = require("./infoEdit/industryInfoEdits/reports");
+const industryChallengeRoute = require("./infoEdit/industryInfoEdits/challenge");
 const usersRoute = require("./infoEdit/users");
 const terms_socialsRoute = require("./infoEdit/terms_socials");
 const http = require("http");
@@ -88,6 +92,10 @@ app.use("/api/news", newsEditRoute);
 app.use("/api/project_interview", projectInterviewRoute);
 app.use("/api/newslinks", newsLinkRoute);
 app.use("/api/users", usersRoute);
+app.use("/api/localcontent", localContentRoute);
+app.use("/api/industryreports", industryReportRoute);
+app.use("/api/industryawards", industryAwardRoute);
+app.use("/api/industrychallenge", industryChallengeRoute);
 
 
 // app.use((req, res, next) => {
