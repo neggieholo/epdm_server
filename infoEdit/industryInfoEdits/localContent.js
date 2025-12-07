@@ -147,12 +147,12 @@ router.get("/", async (req, res) => {
 // ------------------------------------------------------
 router.get("/:id", async (req, res) => {
     try {
-        const localcontents = await LocalContent.findById(req.params.id);
-        if (!localcontents) {
+        const localcontent = await LocalContent.findById(req.params.id);
+        if (!localcontent) {
             return res.status(404).json({ error: "Local content not found" });
         }
 
-        res.json({ success: true, localcontents });
+        res.json({ success: true, localcontent });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
