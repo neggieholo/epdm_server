@@ -34,7 +34,8 @@ const storage = new CloudinaryStorage({
             return {
                 folder: "newsvideos",
                 resource_type: "video", // important!
-                allowed_formats: ["mp4", "mov"]
+                allowed_formats: ["mp4", "mov"],
+                chunk_size: 6000000, // 6MB chu
                 // no transformation
             };
         }
