@@ -1,9 +1,11 @@
 // routes/news.js
 const express = require("express");
 const multer = require("multer");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
+// const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("cloudinary").v2;
 const { ProjectInterview } = require('../../models/admin');
+const path = require("path");
+const fs = require("fs");
 
 const router = express.Router();
 
@@ -14,97 +16,78 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARYAPISECRET,
 });
 
-// Multer setup
-const storage = new CloudinaryStorage({
-    cloudinary,
-    params: async (req, file) => {
-        // console.log("Uploading file:", file.originalname, file.mimetype);
-
-        // Image
-        if (file.mimetype.startsWith("image/")) {
-            return {
-                folder: "news",
-                allowed_formats: ["jpg", "png", "jpeg"],
-                transformation: [{ width: 1000, crop: "limit" }]
-            };
-        }
-
-        // Video
-        if (file.mimetype.startsWith("video/") || file.originalname.match(/\.(mp4|mov)$/i)) {
-            return {
-                folder: "newsvideos",
-                resource_type: "video", // important!
-                allowed_formats: ["mp4", "mov"],
-                chunk_size: 6000000, // 6MB chu
-                // no transformation
-            };
-        }
-
-        // Fallback: treat as raw
-        return {
-            folder: "news",
-            resource_type: "raw"
-        };
-    }
+// Store files temporarily in "uploads/" folder
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, "uploads/"); // temp folder
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    },
+  }),
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
 });
-const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } }); 
 
-router.post(
-    "/create",
-    upload.array("media"),
-    async (req, res) => {
-        if (!req.isAuthenticated()) {
-            return res.status(401).json({ error: "Unauthorized: Login required" });
-        }
+router.post("/create", upload.any(), async (req, res) => {
+  try {
+    const { heading } = req.body;
+    let { sections } = req.body;
 
-        try {
-            const { heading } = req.body;
-            let { sections } = req.body;
-            // console.log("News contents:", { 'Heading': heading, 'Sections': sections });
-
-            if (!heading || !heading.trim()) {
-                return res.status(400).json({ error: "Heading is required" });
-            }
-
-            // 🔑 Parse sections safely
-            let parsedSections;
-            try {
-                parsedSections = typeof sections === "string"
-                    ? JSON.parse(sections)
-                    : sections;
-            } catch (e) {
-                return res.status(400).json({ error: "Invalid sections JSON" });
-            }
-
-            // 🔄 Replace "__UPLOAD__" placeholders with Cloudinary URLs
-            let fileIndex = 0;
-            parsedSections = parsedSections.map((sec) => {
-                if (
-                    (sec.type === "image" || sec.type === "video") &&
-                    sec.content === "__UPLOAD__"
-                ) {
-                    const uploadedFile = req.files[fileIndex];
-                    if (uploadedFile) {
-                        const fileUrl = uploadedFile.path; // Cloudinary secure URL
-                        fileIndex++;
-                        return { ...sec, content: fileUrl }; // caption preserved
-                    }
-                }
-                return sec;
-            });
-
-            // 📝 Save to Mongo
-            const interview = new ProjectInterview({ heading, sections: parsedSections });
-            await interview.save();
-
-            // console.log("✅ News created:", news);
-            res.json({ success: true, interview });
-        } catch (err) {
-            console.error("❌ Error creating news:", err);
-            res.status(500).json({ error: err.message || "Server error" });
-        }
+    if (!heading || !heading.trim()) {
+      return res.status(400).json({ error: "Heading is required" });
     }
-);
+
+    const parsedSections =
+      typeof sections === "string" ? JSON.parse(sections) : sections;
+
+    let fileIndex = 0;
+
+    for (const sec of parsedSections) {
+      if (sec.content === "__UPLOAD__") {
+        const file = req.files[fileIndex];
+        if (!file) continue;
+
+        let result;
+
+        if (file.mimetype.startsWith("video/")) {
+          result =  await cloudinary.uploader.upload(file.path, {
+            resource_type: "video",
+            folder: "industryvideos",
+        });
+        } else if (file.mimetype.startsWith("image/")) {
+          result = await cloudinary.uploader.upload(file.path, {
+            folder: "industryimages",
+            transformation: [{ width: 1000, crop: "limit" }]
+          });
+        } else if (file.mimetype === "application/pdf") {
+          result = await cloudinary.uploader.upload(file.path, {
+            resource_type: "raw",
+            folder: "industryPDFs"
+          });
+        }
+
+        sec.content = result.secure_url;
+        fs.unlink(file.path, (err) => {
+        if (err) console.error("Failed to delete temp file:", err);
+        });
+
+        fileIndex++;
+      }
+    }
+
+    const interview = new ProjectInterview({ heading, sections: parsedSections });
+    await interview.save();
+
+    // console.log("✅ News created:", news);
+    res.json({ success: true, interview });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // 📌 Get all news
 router.get("/", async (req, res) => {
